@@ -2,6 +2,7 @@ package io.security.basicsecurity.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -31,17 +32,18 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     UserDetailsService userDetailsService;
 
-    /* 인증, 인가에 관련한 설정을 할 수 있다. */
+    /* 사용자를 생성할 수 있다. */
+    @Override
+    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication().withUser("user").password("1111").roles("USER");
+        auth.inMemoryAuthentication().withUser("sys").password("1111").roles("SYS");
+        auth.inMemoryAuthentication().withUser("admin").password("1111").roles("ADMIN");
+    }
+
+    /* 인증, 권한에 관련한 설정을 할 수 있다. */
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        //인가
-        http
-                .authorizeRequests()
-                .anyRequest().authenticated();
-
         //인증
-        // 로그인 성공 후 핸들러
-        // 로그인 실패 후 핸들러
         http
                 .formLogin()
                 //.loginPage("/loginPage")                // 사용자 정의 로그인 페이지
@@ -50,7 +52,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .usernameParameter("userId")			// 아이디 파라미터명 설정
                 .passwordParameter("passwd")			// 패스워드 파라미터명 설정
                 .loginProcessingUrl("/login_proc")		// 로그인 Form Action Url
-                .successHandler((request, response, authentication) -> {
+                .successHandler((request, response, authentication) -> { // 로그인 성공 후 핸들러
                     //authentication : 인증한 결과를 받는다.
                     System.out.println("###############################################");
                     System.out.println("Successed Login");
@@ -61,7 +63,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                     System.out.println("###############################################");
                     response.sendRedirect("/");
                 })
-                .failureHandler((request, response, exception) -> {
+                .failureHandler((request, response, exception) -> { // 로그인 실패 후 핸들러
                     System.out.println("exception : " + exception.getMessage());
                     response.sendRedirect("/login");
                 })
@@ -97,8 +99,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .maxSessionsPreventsLogin(true) // true : 동시 로그인 차단, false : 기존 세션 만료(default)
                 .expiredUrl("/expired"); // 세션이 만료된 경우 이동 할 페이지
 
-
-
+        //인가
+        http
+                .authorizeRequests()
+                .antMatchers("/user").hasRole("USER") // USER의 권한을 가진 사용자만 가능
+                /* 먼저 위치한 /admin/pay부터 처리 */
+                .antMatchers("/admin/pay").hasRole("ADMIN") // ADMIN의 권한을 가진 사용자만 가능
+                .antMatchers("/admin/**").access("hasRole('ADMIN') or hasRole('SYS')")
+                .anyRequest().authenticated();
 
 
     }
