@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
@@ -89,9 +90,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         // 동시 세션 제어
         http.sessionManagement()
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // ALWAYS, IF_REQUIRED, NEVER, STATELESS
+                .sessionFixation().changeSessionId() // 세션 고정 보호
+                .invalidSessionUrl("/invalid") // 세션이 유효하지 않을 때 이동 할 페이지
                 .maximumSessions(1) // -1 무제한 로그인 세션 허용
                 .maxSessionsPreventsLogin(true) // true : 동시 로그인 차단, false : 기존 세션 만료(default)
-                .expiredUrl("/expired");
+                .expiredUrl("/expired"); // 세션이 만료된 경우 이동 할 페이지
+
+
+
+
 
     }
 
